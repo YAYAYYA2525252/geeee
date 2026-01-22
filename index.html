@@ -3,177 +3,589 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENSE-X | Pro Toolkit</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>Brushly | Pro Photo Editor</title>
+    <link rel="icon" href="https://media.discordapp.net/attachments/982219650861514773/1461506762065842246/Picsart_26-01-16_02-35-06-761.png">
     <style>
         :root {
             --bg: #000000;
-            --surface: #111111;
-            --text: #ffffff;
-            --subtext: #888888;
+            --surface: #121212;
+            --surface-light: #1e1e1e;
             --accent: #ffffff;
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+            --radius: 18px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        body {
-            margin: 0; background: var(--bg); color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica;
-            overflow: hidden; height: 100vh; display: flex; flex-direction: column;
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        /* HEADER */
-        header {
-            padding: 20px; border-bottom: 1px solid #222;
-            display: flex; justify-content: space-between; align-items: center;
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
         }
-        header h1 { font-size: 1.2rem; font-weight: 900; letter-spacing: 4px; margin: 0; }
 
-        /* MAIN DISPLAY */
-        .display-container {
-            flex: 1; display: flex; flex-direction: column; align-items: center;
-            justify-content: center; padding: 20px; text-align: center;
-        }
-        .main-value { font-size: 5rem; font-weight: 200; line-height: 1; margin: 10px 0; font-variant-numeric: tabular-nums; }
-        .label { color: var(--subtext); text-transform: uppercase; letter-spacing: 2px; font-size: 0.7rem; }
+        /* custom scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--surface-light); border-radius: 10px; }
 
-        /* AXIS GRID */
-        .axis-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr);
-            width: 100%; max-width: 400px; gap: 10px; margin-top: 30px;
+        /* view management */
+        .view {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
         }
-        .axis-card {
-            background: var(--surface); padding: 15px; border-radius: 12px;
-            border: 1px solid #222; transition: all 0.2s ease;
-        }
-        .axis-card:active { transform: scale(0.95); background: #222; }
-        .axis-val { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
-        .axis-label { color: var(--subtext); font-size: 0.6rem; text-transform: uppercase; }
+        .view.active { display: flex; }
 
-        /* NAVIGATION DRAWER */
-        .nav-bar {
-            background: #0a0a0a; border-top: 1px solid #222;
-            display: grid; grid-template-columns: repeat(4, 1fr); padding: 15px 10px 30px;
-        }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center;
-            color: var(--subtext); transition: 0.3s; cursor: pointer;
-        }
-        .nav-item.active { color: var(--text); }
-        .nav-item i { margin-bottom: 5px; }
-        .nav-item span { font-size: 0.6rem; text-transform: uppercase; font-weight: bold; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* CALIBRATION OVERLAY */
-        #overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; z-index: 100; padding: 40px;
+        /* home view */
+        .home-header {
+            padding: 40px 20px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .btn-start {
-            background: white; color: black; border: none; padding: 15px 40px;
-            border-radius: 50px; font-weight: bold; letter-spacing: 1px;
+        .app-branding { display: flex; align-items: center; gap: 12px; }
+        .app-branding img { width: 40px; height: 40px; border-radius: 10px; }
+        .app-branding h1 { font-size: 24px; font-weight: 800; letter-spacing: -1px; margin: 0; }
+
+        .projects-grid {
+            flex: 1;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            overflow-y: auto;
         }
+        .project-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            aspect-ratio: 1;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #222;
+            transition: var(--transition);
+        }
+        .project-card:active { transform: scale(0.95); }
+        .project-thumb { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
+        .project-del {
+            position: absolute; top: 10px; right: 10px;
+            background: rgba(255,0,0,0.2); color: #ff4444;
+            border: none; border-radius: 50%; width: 28px; height: 28px;
+        }
+
+        .fab-container {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .btn-main {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 16px 40px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 16px;
+            box-shadow: 0 10px 20px rgba(255,255,255,0.1);
+            transition: var(--transition);
+        }
+
+        /* editor view */
+        .editor-header {
+            height: 60px;
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg);
+            border-bottom: 1px solid var(--surface);
+        }
+        .history-controls { display: flex; gap: 15px; }
+        .icon-btn {
+            background: none; border: none; color: white;
+            padding: 8px; border-radius: 50%;
+            transition: var(--transition);
+        }
+        .icon-btn:active { background: var(--surface-light); }
+
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #080808;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #main-canvas {
+            max-width: 95%;
+            max-height: 95%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            background: #fff;
+        }
+
+        /* toolbars */
+        .editor-footer {
+            background: var(--surface);
+            border-top: 1px solid #222;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .tool-categories {
+            display: flex;
+            overflow-x: auto;
+            padding: 10px;
+            gap: 10px;
+            scrollbar-width: none;
+        }
+        .category-btn {
+            background: transparent;
+            color: var(--text-dim);
+            border: none;
+            padding: 10px 20px;
+            white-space: nowrap;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 12px;
+        }
+        .category-btn.active { color: var(--accent); background: var(--surface-light); }
+
+        .action-bar {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            overflow-x: auto;
+            gap: 15px;
+        }
+        .action-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            min-width: 60px;
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+        .action-item i { font-size: 20px; color: white; }
+
+        /* panels */
+        .panel {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%;
+            background: var(--surface);
+            border-radius: 25px 25px 0 0;
+            transform: translateY(100%);
+            transition: var(--transition);
+            z-index: 100;
+            padding: 20px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        .panel.active { transform: translateY(0); }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        /* layers sidebar */
+        #layers-panel {
+            position: fixed;
+            right: 0; top: 60px; bottom: 160px;
+            width: 70px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+            gap: 10px;
+            border-left: 1px solid #222;
+            z-index: 50;
+        }
+        .layer-item {
+            width: 50px; height: 50px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background: #333;
+            overflow: hidden;
+        }
+        .layer-item.active { border-color: var(--accent); }
+
+        /* specific tool grids */
+        .grid-list {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .filter-card {
+            aspect-ratio: 1;
+            background: #222;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            text-align: center;
+            padding: 5px;
+        }
+        .shape-item { font-size: 24px; color: white; }
+
+        /* text settings */
+        .text-settings { display: grid; gap: 15px; }
+        .setting-row { display: flex; flex-direction: column; gap: 5px; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: white; border-radius: 50%; }
+
     </style>
 </head>
 <body>
 
-    <div id="overlay">
-        <i data-lucide="shield-alert" style="width: 48px; height: 48px; margin-bottom: 20px;"></i>
-        <h2 style="text-align: center;">SENSOR ACCESS REQUIRED</h2>
-        <p style="color: #888; text-align: center; font-size: 0.9rem; margin-bottom: 30px;">
-            This tool requires Magnetometer and Motion sensor access to function.
-        </p>
-        <button class="btn-start" onclick="init()">INITIALIZE</button>
-    </div>
-
-    <header>
-        <h1 id="mode-title">MAG-SENSOR</h1>
-        <i data-lucide="info" style="width: 20px; height: 20px; color: #444;"></i>
-    </header>
-
-    <div class="display-container">
-        <div class="label" id="main-label">TOTAL FIELD INTENSITY</div>
-        <div class="main-value" id="main-val">0.0</div>
-        <div class="unit" style="color: #444;">MICROTESLA (µT)</div>
-
-        <div class="axis-grid">
-            <div class="axis-card">
-                <div class="axis-val" id="val-x">0</div>
-                <div class="axis-label">X-AXIS</div>
+    <div id="view-home" class="view active">
+        <div class="home-header">
+            <div class="app-branding">
+                <img src="https://media.discordapp.net/attachments/982219650861514773/1461506762065842246/Picsart_26-01-16_02-35-06-761.png" alt="logo">
+                <h1>brushly.</h1>
             </div>
-            <div class="axis-card">
-                <div class="axis-val" id="val-y">0</div>
-                <div class="axis-label">Y-AXIS</div>
+        </div>
+        <div class="projects-grid" id="projects-container">
             </div>
-            <div class="axis-card">
-                <div class="axis-val" id="val-z">0</div>
-                <div class="axis-label">Z-AXIS</div>
-            </div>
+        <div class="fab-container">
+            <button class="btn-main" onclick="createNewProject()">+ new project</button>
         </div>
     </div>
 
-    <nav class="nav-bar">
-        <div class="nav-item active" onclick="setMode('mag')">
-            <i data-lucide="magnet"></i><span>Magnetic</span>
+    <div id="view-editor" class="view">
+        <div class="editor-header">
+            <button class="icon-btn" onclick="exitEditor()">✕</button>
+            <div class="history-controls">
+                <button class="icon-btn" onclick="undo()">⟲</button>
+                <button class="icon-btn" onclick="redo()">⟳</button>
+            </div>
+            <button class="icon-btn" onclick="exportImage()" style="color: var(--accent); font-weight: bold;">save</button>
         </div>
-        <div class="nav-item" onclick="setMode('emf')">
-            <i data-lucide="activity"></i><span>EMF</span>
+
+        <div class="canvas-area" id="canvas-wrap">
+            <canvas id="main-canvas"></canvas>
+            
+            <div id="layers-panel">
+                </div>
         </div>
-        <div class="nav-item" onclick="setMode('compass')">
-            <i data-lucide="compass"></i><span>Compass</span>
+
+        <div class="editor-footer">
+            <div class="tool-categories" id="cat-scroll">
+                <button class="category-btn active" onclick="switchTab('tools')">tools</button>
+                <button class="category-btn" onclick="switchTab('effects')">effects</button>
+                <button class="category-btn" onclick="switchTab('text')">text</button>
+                <button class="category-btn" onclick="switchTab('add')">add</button>
+                <button class="category-btn" onclick="switchTab('shapes')">shapes</button>
+                <button class="category-btn" onclick="switchTab('draw')">draw</button>
+            </div>
+            
+            <div class="action-bar" id="tool-actions">
+                </div>
         </div>
-        <div class="nav-item" onclick="setMode('test')">
-            <i data-lucide="cpu"></i><span>Test</span>
+    </div>
+
+    <div id="panel-settings" class="panel">
+        <div class="panel-header">
+            <h3 id="panel-title">settings</h3>
+            <button class="icon-btn" onclick="closePanel()">✕</button>
         </div>
-    </nav>
+        <div id="panel-content"></div>
+    </div>
+
+    <input type="file" id="file-input" hidden accept="image/*">
 
     <script>
-        let currentMode = 'mag';
-        let sensor = null;
+        // --- state management ---
+        let projects = JSON.parse(localStorage.getItem('brushly_projects') || '[]');
+        let currentLayers = [];
+        let history = [];
+        let historyStep = -1;
+        let activeLayerIndex = -1;
+        
+        const canvas = document.getElementById('main-canvas');
+        const ctx = canvas.getContext('2d');
+        const fileInput = document.getElementById('file-input');
 
-        // Initialize Lucide Icons
-        lucide.createIcons();
+        // --- core classes ---
+        class Layer {
+            constructor(type, data) {
+                this.id = Date.now() + Math.random();
+                this.type = type; // 'image', 'text', 'shape', 'draw'
+                this.data = data;
+                this.x = 50; this.y = 50;
+                this.width = 200; this.height = 200;
+                this.rotation = 0;
+                this.opacity = 1;
+                this.filters = { contrast: 100, brightness: 100, saturate: 100, blur: 0, grayscale: 0 };
+                this.visible = true;
+                this.textProps = { content: 'double tap', size: 40, color: '#ffffff', font: 'Arial', bold: false, spacing: 0 };
+            }
+        }
 
-        async function init() {
-            document.getElementById('overlay').style.display = 'none';
-            if (window.Magnetometer) {
-                try {
-                    sensor = new Magnetometer({ frequency: 60 });
-                    sensor.addEventListener('reading', () => updateDisplay());
-                    sensor.start();
-                } catch (e) {
-                    alert("Sensor blocked. Check Chrome flags! ✌️😭");
+        // --- initialization ---
+        function init() {
+            renderProjects();
+            switchTab('tools');
+        }
+
+        function renderProjects() {
+            const container = document.getElementById('projects-container');
+            container.innerHTML = projects.length ? '' : '<p style="grid-column: 1/-1; text-align: center; color: #555;">no projects yet 😭</p>';
+            projects.forEach((p, idx) => {
+                const card = document.createElement('div');
+                card.className = 'project-card';
+                card.innerHTML = `
+                    <img class="project-thumb" src="${p.thumb || ''}" onclick="loadProject(${idx})">
+                    <button class="project-del" onclick="deleteProject(${idx})">✕</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function createNewProject() {
+            fileInput.click();
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const baseLayer = new Layer('image', event.target.result);
+                        baseLayer.x = 0; baseLayer.y = 0;
+                        baseLayer.width = img.width; baseLayer.height = img.height;
+                        currentLayers = [baseLayer];
+                        activeLayerIndex = 0;
+                        saveState();
+                        showView('editor');
+                        renderCanvas();
+                        renderLayersPanel();
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+        }
+
+        // --- canvas engine ---
+        function renderCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            currentLayers.forEach((layer, idx) => {
+                if (!layer.visible) return;
+                ctx.save();
+                ctx.globalAlpha = layer.opacity;
+                
+                // apply filters
+                ctx.filter = `brightness(${layer.filters.brightness}%) contrast(${layer.filters.contrast}%) saturate(${layer.filters.saturate}%) blur(${layer.filters.blur}px) grayscale(${layer.filters.grayscale}%)`;
+                
+                if (layer.type === 'image') {
+                    const img = new Image();
+                    img.src = layer.data;
+                    ctx.drawImage(img, layer.x, layer.y, layer.width, layer.height);
+                } else if (layer.type === 'text') {
+                    ctx.fillStyle = layer.textProps.color;
+                    ctx.font = `${layer.textProps.bold ? 'bold' : ''} ${layer.textProps.size}px ${layer.textProps.font}`;
+                    ctx.fillText(layer.textProps.content, layer.x, layer.y);
+                } else if (layer.type === 'shape') {
+                    ctx.fillStyle = layer.data.color || 'white';
+                    drawShape(layer);
                 }
-            } else {
-                alert("Hardware not supported on this browser.");
-            }
+                ctx.restore();
+            });
         }
 
-        function setMode(mode) {
-            currentMode = mode;
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            document.getElementById('mode-title').innerText = mode.toUpperCase() + "-SENSOR";
+        function drawShape(layer) {
+            ctx.beginPath();
+            if (layer.data.shape === 'circle') ctx.arc(layer.x, layer.y, layer.width/2, 0, Math.PI*2);
+            else if (layer.data.shape === 'square') ctx.rect(layer.x, layer.y, layer.width, layer.height);
+            else if (layer.data.shape === 'star') {
+                // simple star logic
+                for(let i=0; i<5; i++) {
+                    ctx.lineTo(Math.cos((18+i*72)/180*Math.PI)*layer.width + layer.x, -Math.sin((18+i*72)/180*Math.PI)*layer.width + layer.y);
+                }
+            }
+            ctx.fill();
+        }
+
+        // --- interaction logic ---
+        function switchTab(tab) {
+            const container = document.getElementById('tool-actions');
+            const btns = document.querySelectorAll('.category-btn');
+            btns.forEach(b => b.classList.toggle('active', b.innerText.toLowerCase() === tab));
             
-            if(mode === 'emf') document.getElementById('main-label').innerText = "ELECTROMAGNETIC FLUX";
-            if(mode === 'mag') document.getElementById('main-label').innerText = "TOTAL FIELD INTENSITY";
+            container.innerHTML = '';
+            
+            const tools = {
+                'tools': ['crop', 'freecrop', 'perspective', 'rotate', 'flip', 'cutout', 'remove_bg'],
+                'effects': ['B&W', 'vibrant', 'vintage', 'artistic', 'distort', 'glitch'],
+                'text': ['add_text', 'font', 'shadow', 'bend', 'spacing'],
+                'add': ['gallery', 'camera', 'sticker'],
+                'shapes': ['basic', 'polygons', 'stars', 'scatters'],
+                'draw': ['brush', 'size', 'color', 'eraser', 'fill']
+            };
+
+            tools[tab].forEach(action => {
+                const item = document.createElement('div');
+                item.className = 'action-item';
+                item.innerHTML = `<div style="width:40px;height:40px;background:#222;border-radius:10px;display:flex;align-items:center;justify-content:center;">◈</div><span>${action.replace('_', ' ')}</span>`;
+                item.onclick = () => handleAction(action);
+                container.appendChild(item);
+            });
         }
 
-        function updateDisplay() {
-            if (!sensor) return;
+        function handleAction(action) {
+            if (action === 'B&W') openFilterPanel('bw');
+            if (action === 'vibrant') openFilterPanel('vibrant');
+            if (action === 'vintage') openFilterPanel('vintage');
+            if (action === 'add_text') addTextLayer();
+            if (action === 'basic') openShapePanel();
+            if (action === 'brush') startDrawMode();
+            if (action === 'rotate') { currentLayers[activeLayerIndex].rotation += 90; renderCanvas(); }
+        }
 
-            const { x, y, z } = sensor;
-            const magnitude = Math.sqrt(x**2 + y**2 + z**2).toFixed(1);
+        // --- feature: effects ---
+        function openFilterPanel(cat) {
+            const panel = document.getElementById('panel-settings');
+            const content = document.getElementById('panel-content');
+            document.getElementById('panel-title').innerText = cat.toUpperCase() + ' Effects';
+            content.innerHTML = '<div class="grid-list"></div>';
+            const grid = content.querySelector('.grid-list');
+            
+            // Generate placeholders for the 20+ effects per category
+            for(let i=1; i<=20; i++) {
+                const f = document.createElement('div');
+                f.className = 'filter-card';
+                f.innerText = `${cat} ${i}`;
+                f.onclick = () => applyFilter(cat, i);
+                grid.appendChild(f);
+            }
+            panel.classList.add('active');
+        }
 
-            document.getElementById('main-val').innerText = magnitude;
-            document.getElementById('val-x').innerText = x.toFixed(0);
-            document.getElementById('val-y').innerText = y.toFixed(0);
-            document.getElementById('val-z').innerText = z.toFixed(0);
+        function applyFilter(cat, intensity) {
+            const layer = currentLayers[activeLayerIndex];
+            if (cat === 'bw') { layer.filters.grayscale = 100; layer.filters.contrast = 100 + (intensity * 5); }
+            if (cat === 'vibrant') { layer.filters.saturate = 150 + (intensity * 10); }
+            if (cat === 'vintage') { layer.filters.contrast = 80; layer.filters.brightness = 90; layer.filters.grayscale = 20; }
+            renderCanvas();
+            saveState();
+        }
 
-            // Haptic feedback for high readings
-            if (magnitude > 150 && window.navigator.vibrate) {
-                window.navigator.vibrate(20);
+        // --- feature: text ---
+        function addTextLayer() {
+            const text = new Layer('text', null);
+            text.x = canvas.width/2; text.y = canvas.height/2;
+            currentLayers.push(text);
+            activeLayerIndex = currentLayers.length - 1;
+            renderCanvas();
+            renderLayersPanel();
+            saveState();
+        }
+
+        // --- layers panel ---
+        function renderLayersPanel() {
+            const panel = document.getElementById('layers-panel');
+            panel.innerHTML = '';
+            currentLayers.forEach((l, i) => {
+                const item = document.createElement('div');
+                item.className = `layer-item ${i === activeLayerIndex ? 'active' : ''}`;
+                item.onclick = () => { activeLayerIndex = i; renderLayersPanel(); };
+                panel.appendChild(item);
+            });
+        }
+
+        // --- history ---
+        function saveState() {
+            const state = JSON.stringify(currentLayers);
+            if (historyStep < history.length - 1) history = history.slice(0, historyStep + 1);
+            history.push(state);
+            historyStep++;
+        }
+
+        function undo() {
+            if (historyStep > 0) {
+                historyStep--;
+                currentLayers = JSON.parse(history[historyStep]);
+                renderCanvas();
+                renderLayersPanel();
             }
         }
+
+        function redo() {
+            if (historyStep < history.length - 1) {
+                historyStep++;
+                currentLayers = JSON.parse(history[historyStep]);
+                renderCanvas();
+                renderLayersPanel();
+            }
+        }
+
+        // --- utils ---
+        function showView(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + id).classList.add('active');
+        }
+
+        function closePanel() { document.getElementById('panel-settings').classList.remove('active'); }
+
+        function exportImage() {
+            const link = document.createElement('a');
+            link.download = 'brushly-edit.png';
+            link.href = canvas.toDataURL();
+            link.click();
+            
+            // save to home projects
+            projects.unshift({ thumb: canvas.toDataURL(), data: currentLayers });
+            localStorage.setItem('brushly_projects', JSON.stringify(projects.slice(0, 10)));
+            renderProjects();
+            exitEditor();
+        }
+
+        function exitEditor() { showView('home'); }
+
+        window.onload = init;
+
+        // basic touch drag for layers
+        let isDragging = false;
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            const layer = currentLayers[activeLayerIndex];
+            if(layer) {
+                const rect = canvas.getBoundingClientRect();
+                layer.x = (e.clientX - rect.left) * (canvas.width/rect.width);
+                layer.y = (e.clientY - rect.top) * (canvas.height/rect.height);
+                renderCanvas();
+            }
+        });
+        canvas.addEventListener('mousemove', (e) => {
+            if(!isDragging) return;
+            const layer = currentLayers[activeLayerIndex];
+            const rect = canvas.getBoundingClientRect();
+            layer.x = (e.clientX - rect.left) * (canvas.width/rect.width);
+            layer.y = (e.clientY - rect.top) * (canvas.height/rect.height);
+            renderCanvas();
+        });
+        window.addEventListener('mouseup', () => { if(isDragging) saveState(); isDragging = false; });
+
     </script>
 </body>
 </html>
